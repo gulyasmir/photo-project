@@ -15,11 +15,6 @@ export class PhotoQueueService implements OnModuleInit {
   }
 
   async addTask(filename: string, task: string) {
-    console.log('Adding task to queue:', {
-      queueName: 'photo-processing',
-      taskName: task,
-      data: { filename, task },
-    });
     await this.queue.add('process-photo', { filename, task });
   }
 

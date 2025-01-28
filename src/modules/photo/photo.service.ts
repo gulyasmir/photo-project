@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { Repository } from 'typeorm';
 import { createWriteStream, promises as fs } from 'fs';
 import * as sharp from 'sharp';
@@ -14,8 +12,7 @@ import { PhotoQueueService } from './photo-queue.service';
 export class PhotoService {
   private readonly uploadBasePath = './uploads';
   constructor(
-    
-    private readonly photoQueueService: PhotoQueueService, 
+    private readonly photoQueueService: PhotoQueueService,
     @InjectRepository(PhotoEntity)
     private readonly photoRepo: Repository<PhotoEntity>,
   ) {}
@@ -26,7 +23,7 @@ export class PhotoService {
     return `${uniqueId}.${ext}`;
   }
 
-  async saveFile(fileName: string, folder,  buffer: Buffer): Promise<void> {
+  async saveFile(fileName: string, folder, buffer: Buffer): Promise<void> {
     const filePath = path.join(process.cwd(), folder, fileName);
     await new Promise((resolve, reject) => {
       const stream = createWriteStream(filePath);
