@@ -62,7 +62,6 @@ export class PhotoService {
   async generatePreview(filename: string): Promise<void> {
     const filePath = path.join(process.cwd(), this.uploadBasePath, filename);
     const fileBuffer = await fs.readFile(filePath);
-
     const previewBuffer = await sharp(fileBuffer).resize(200, 200).toBuffer();
     const previewPath = path.join(
       process.cwd(),
@@ -70,7 +69,6 @@ export class PhotoService {
       'previews',
       filename,
     );
-
     await fs.mkdir(path.dirname(previewPath), { recursive: true });
     await fs.writeFile(previewPath, previewBuffer);
   }

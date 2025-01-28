@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { PhotoService } from './photo.service';
 import { PhotoController } from './photo.controller';
 import { PhotoEntity } from './entities/photo.entity';
+import { PhotoProcessor } from './photo.processor';
 
 @Module({
   imports: [
@@ -13,7 +14,6 @@ import { PhotoEntity } from './entities/photo.entity';
     }),
   ],
   controllers: [PhotoController],
-  providers: [PhotoService],
-  exports: [PhotoService],
+  providers: [PhotoService, PhotoProcessor],
 })
 export class PhotoModule {}
