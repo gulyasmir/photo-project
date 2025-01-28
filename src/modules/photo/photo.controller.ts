@@ -7,13 +7,11 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PhotoService } from './photo.service';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { ApiBody, ApiConsumes } from '@nestjs/swagger';
 
 @Controller('photos')
 export class PhotoController {
-  constructor(private readonly photoService: PhotoService) {}
+  constructor(private readonly photoService: PhotoService,) {}
 
   @Post('upload')
   @ApiConsumes('multipart/form-data')

@@ -9,11 +9,13 @@ import { exiftool } from 'exiftool-vendored';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { PhotoEntity } from './entities/photo.entity';
+import { PhotoQueueService } from './photo-queue.service';
 @Injectable()
 export class PhotoService {
   private readonly uploadBasePath = './uploads';
   constructor(
-    @InjectQueue('photo-processing') private readonly queue: Queue,
+    
+    private readonly photoQueueService: PhotoQueueService, 
     @InjectRepository(PhotoEntity)
     private readonly photoRepo: Repository<PhotoEntity>,
   ) {}
@@ -24,8 +26,8 @@ export class PhotoService {
     return `${uniqueId}.${ext}`;
   }
 
-  async saveFile(fileName: string, buffer: Buffer): Promise<void> {
-    const filePath = path.join(process.cwd(), 'uploads', fileName);
+  async saveFile(fileName: string, folder,  buffer: Buffer): Promise<void> {
+    const filePath = path.join(process.cwd(), folder, fileName);
     await new Promise((resolve, reject) => {
       const stream = createWriteStream(filePath);
       stream.write(buffer);
@@ -41,17 +43,10 @@ export class PhotoService {
         return 'Только изображения форматов JPG, JPEG, PNG или GIF';
       }
       const filename = this.generateUniqueFilename(file.originalname);
-      await this.saveFile(filename, file.buffer);
+      await this.saveFile(filename, 'uploads', file.buffer);
 
-      await this.queue.add('process-photo', {
-        filename,
-        task: 'generate-preview',
-      });
-
-      await this.queue.add('process-photo', {
-        filename,
-        task: 'extract-exif',
-      });
+      await this.photoQueueService.addTask(filename, 'generate-preview');
+      await this.photoQueueService.addTask(filename, 'extract-exif');
 
       return `${this.uploadBasePath}/${filename}`;
     } catch (error) {
@@ -70,7 +65,7 @@ export class PhotoService {
       filename,
     );
     await fs.mkdir(path.dirname(previewPath), { recursive: true });
-    await fs.writeFile(previewPath, previewBuffer);
+    await this.saveFile(filename, 'uploads/previews', previewBuffer);
   }
 
   async extractExifAndSave(filename: string): Promise<void> {
