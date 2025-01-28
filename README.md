@@ -1,30 +1,87 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Distributed Photo Processing
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Написано на Nest.js
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Задача
+
+Нужно спроектировать и частично реализовать сервис распределенной обработки фотографий на NestJS.
+
+Основные требования:
+
+- REST API для загрузки фото
+- Распределенная очередь задач на Redis:
+- Создание превью (маленькое изображение)
+- Извлечение EXIF
+- Хранение результатов в PostgreSQL
+- Возможность масштабирования воркеров
+- Документация API (Swagger)
+- Покрытие тестами
+
+Продвинутые требования (1-2шт по желанию):
+
+- Отказоустойчивость при падении Redis
+- Мониторинг очереди
+- Повторная обработка неудачных задач
+- Graceful shutdown
+- S3-совместимое хранилище
+- Метрики производительности
+
+
+#### Выбраны продвинутые требования:
+
+1. Повторная обработка неудачных задач
+2. Мониторинг очереди
+
+#### Обоснование.
+
+**Повторная обработка неудачных задач**
+
+**Для чего это нужно:**
+
+1. **Обеспечение надежности системы:**
+   * В реальной жизни задачи могут завершаться с ошибками из-за временных сбоев (например, потеря связи с Redis, перегрузка сервиса или ошибки сети).
+   * Повторная обработка позволяет гарантировать, что временные сбои не приведут к потере данных или неудаче в обработке.
+2. **Обработка зависимых данных:**
+   * Например, задача на создание превью может зависеть от сохранения файла на диск или в S3. Если предыдущая задача завершилась сбоем, мы можем повторить её позже и продолжить выполнение цепочки.
+3. **Минимизация ручного вмешательства:**
+   * Без автоматической повторной обработки неудачные задачи потребуют ручного вмешательства от разработчиков или администраторов для исправления, что увеличивает операционные затраты и замедляет работу системы.
+4. **Гарантия корректного результата:**
+   * Даже если сбой произошел, система сможет гарантировать обработку всех задач (например, извлечение EXIF-данных или создание превью для загруженных фотографий).
+
+**Как это реализуется:**
+
+* **Backoff (отложенные повторные попытки):** Система может повторять задачу с возрастающим интервалом между попытками.
+* **Лимит попыток:** После определенного количества попыток задача может быть отправлена в специальный "мертвый" список (dead-letter queue) для дальнейшего анализа.
+
+
+**Мониторинг очереди**
+
+**Для чего это нужно:**
+
+1. **Отслеживание состояния системы:**
+   * Мониторинг позволяет понять, сколько задач в очереди находятся в ожидании, обрабатываются или завершились с ошибками.
+   * Это важно для оценки производительности системы и выявления узких мест (например, нехватка воркеров).
+2. **Предотвращение накопления задач:**
+   * Если система начинает перегружаться или Redis перестает справляться, мониторинг позволяет заметить аномальное поведение (например, большое количество невыполненных задач) и принять меры (увеличение числа воркеров, балансировка нагрузки).
+3. **Устранение проблем в реальном времени:**
+   * Например, если очередь начинает расти из-за неудачных задач или медленной обработки, администраторы могут оперативно масштабировать количество воркеров или перераспределить задачи.
+4. **Диагностика ошибок:**
+   * Мониторинг помогает увидеть, какие задачи часто завершаются с ошибками, и это упрощает диагностику проблем в коде или инфраструктуре.
+5. **Сбор метрик производительности:**
+   * Сколько времени занимает обработка одной задачи?
+   * Какие типы задач обрабатываются чаще всего?
+   * Это важно для анализа и оптимизации системы.
+
+**Как это реализуется:**
+
+* Использование специализированных инструментов для мониторинга очередей, например:
+  * **BullMQ UI или Bull Board** для отслеживания состояния задач.
+  * **Grafana/Prometheus** для сбора и отображения метрик Redis и воркеров.
+* Настройка логирования и алертов для критических событий (например, превышение времени ожидания задач или высокая нагрузка на очередь).
+
+Эти две функции являются основой для построения надежного, масштабируемого и отказоустойчивого REST API с очередями задач.
 
 ## Installation
 
@@ -71,3 +128,6 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](LICENSE).
+
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
