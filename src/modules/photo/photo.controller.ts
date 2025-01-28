@@ -34,7 +34,8 @@ export class PhotoController {
         destination: './uploads', // Путь для сохранения файлов
         filename: (req, file, callback) => {
           // Генерация уникального имени файла
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
           callback(null, filename);
@@ -44,7 +45,9 @@ export class PhotoController {
         // Проверка типа файла
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
           return callback(
-            new BadRequestException('Только изображения форматов JPG, JPEG, PNG или GIF'),
+            new BadRequestException(
+              'Только изображения форматов JPG, JPEG, PNG или GIF',
+            ),
             false,
           );
         }
@@ -56,8 +59,6 @@ export class PhotoController {
     if (!file) {
       throw new BadRequestException('Файл не был загружен');
     }
-
-    // Обработка файла (например, сохранение информации в БД)
     const photoUrl = await this.photoService.savePhoto(file.filename);
     return { message: 'Фото успешно загружено', url: photoUrl };
   }
