@@ -15,7 +15,7 @@ export class PhotoQueueService implements OnModuleInit {
   }
 
   async addTask(filename: string, task: string) {
-    await this.queue.add('process-photo', { filename, task });
+    const job =  await this.queue.add('process-photo', { filename, task }, { removeOnComplete: false, removeOnFail: false  });
   }
 
   private async monitorQueue() {
@@ -27,7 +27,7 @@ export class PhotoQueueService implements OnModuleInit {
       } else if (waitingCount > 20) {
         this.workerPoolManager.scaleWorkers(3); // Средняя нагрузка
       } else {
-        this.workerPoolManager.scaleWorkers(1); // Низкая нагрузка
+        this.workerPoolManager.scaleWorkers(2); // Низкая нагрузка
       }
     }, 5000); // Проверяем очередь каждые 5 секунд
   }

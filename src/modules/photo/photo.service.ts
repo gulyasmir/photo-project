@@ -66,7 +66,8 @@ export class PhotoService {
   }
 
   async extractExifAndSave(filename: string): Promise<void> {
-    const metadata = await exiftool.read(filename);
+    const filePath = path.join(process.cwd(), this.uploadBasePath, filename);
+    const metadata = await exiftool.read(filePath);
     const exifData = {
       Make: metadata.Make, // Производитель камеры
       Model: metadata.Model, // Модель камеры
