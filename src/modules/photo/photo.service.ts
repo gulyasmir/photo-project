@@ -23,8 +23,7 @@ export class PhotoService {
     return `${uniqueId}.${ext}`;
   }
 
-  async saveFile(fileName: string, folder, buffer: Buffer): Promise<void> {
-    const filePath = path.join(process.cwd(), folder, fileName);
+  async saveFile(filePath: string, buffer: Buffer): Promise<void> {
     await new Promise((resolve, reject) => {
       const stream = createWriteStream(filePath);
       stream.write(buffer);
@@ -40,7 +39,8 @@ export class PhotoService {
         return 'Только изображения форматов JPG, JPEG, PNG или GIF';
       }
       const filename = this.generateUniqueFilename(file.originalname);
-      await this.saveFile(filename, 'uploads', file.buffer);
+      const filePath = path.join(process.cwd(), this.uploadBasePath, filename);
+      await this.saveFile(filePath, file.buffer);
 
       await this.photoQueueService.addTask(filename, 'generate-preview');
       await this.photoQueueService.addTask(filename, 'extract-exif');
@@ -62,7 +62,7 @@ export class PhotoService {
       filename,
     );
     await fs.mkdir(path.dirname(previewPath), { recursive: true });
-    await this.saveFile(filename, 'uploads/previews', previewBuffer);
+    await this.saveFile(previewPath, previewBuffer);
   }
 
   async extractExifAndSave(filename: string): Promise<void> {
