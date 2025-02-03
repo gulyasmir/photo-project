@@ -15,7 +15,7 @@ export class PhotoQueueService implements OnModuleInit {
   }
 
   async addTask(filename: string, task: string) {
-    const job =  await this.queue.add('process-photo', { filename, task }, { removeOnComplete: false, removeOnFail: false  });
+     await this.queue.add('process-photo', { filename, task }, { removeOnComplete: false, removeOnFail: false  });
   }
 
   private async monitorQueue() {

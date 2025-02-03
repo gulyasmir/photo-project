@@ -88,12 +88,27 @@ $ npm install
 ```
 
 Для запуска Postgres и Redis запустить Docker.
+Чтобы таблицы Бд хранились вне образа (и данные не терялись при перезапуске контейнера)  нужно:
+
+Создать папку для данных PostgreSQL:
+
+```
+mkdir -p ./pg_data
+```
+
+Дать ей нужные права, чтобы контейнер мог писать в нее:
+
+```
+chmod -R 777 ./pg_data
+```
+
+И затем запустить контейнеры:
 
 ```
 docker-compose up -d
 ```
 
-БД тут  http://localhost:8080, логин и пароль в docker-compose.yml 
+БД тут  http://localhost:8080, логин и пароль в docker-compose.yml
 
 Running the app
 
